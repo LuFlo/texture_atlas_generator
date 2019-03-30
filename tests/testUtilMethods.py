@@ -5,10 +5,7 @@ import util
 
 from collections import namedtuple
 
-class Vector:
-    def __init__(self, tpl):
-        self.x = tpl[0]
-        self.y = tpl[1]
+from .helper_classes import Vector
 
 class TestUtilMethods(unittest.TestCase):
 

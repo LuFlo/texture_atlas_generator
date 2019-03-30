@@ -2,20 +2,14 @@ from math import fabs
 
 from collections import namedtuple
 
+try:
+    import bpy
+    from mathutils import Vector
+except ImportError:
+    from tests.helper_classes import Vector
+
+
 TileInfo = namedtuple('TileInfo', 'x1 y1 x2 y2 color')
-class Vector:
-
-    def __init__(self, tpl):
-        self.x = tpl[0]
-        self.y = tpl[1]
-
-
-    def __add__(v1, v2):
-        return Vector((v1.x + v2.x, v1.y + v2.y))
-
-    def __mul__(v1, s):
-        return Vector((v1.x * s, v1.y * s))
-
 
 def create_tile_infos(width, height, num_tiles, tile_size, colors):
     x_tiles = int(width / tile_size)
@@ -80,3 +74,53 @@ def translate_uvs(tile_info: TileInfo, uvs=[], margin=5.0):
     out_uvs = [v + t1 + margin_v for v in out_uvs]
 
     return out_uvs
+
+
+def generate_texture_atlas(image_size, tile_size):
+    bpy.ops.object.mode_set(mode="OBJECT")
+
+    obj = bpy.context.active_object
+
+    if "texture_atlas" not in bpy.data.images:
+        bpy.ops.image.new(name="texture_atlas", width=image_size, height=image_size)
+    image = bpy.data.images['texture_atlas']
+    image.generated_width = image_size
+    image.generated_height = image_size
+    width = image.size[0]
+    height = image.size[1]
+
+    colors = []
+    color_face_map = {}
+    for face in obj.data.polygons:
+        mat_index = face.material_index
+        mat = obj.material_slots[mat_index].material
+        color = mat.node_tree.nodes["Principled BSDF"].inputs[0].default_value
+        if not color in colors:
+            colors.append(color)
+        if not color in color_face_map:
+            color_face_map[color] = []
+        color_face_map[color].append(face)
+
+    tile_infos = create_tile_infos(width, height, len(colors), tile_size, colors)
+
+    print(list(color_face_map.keys()))
+
+    for color, faces in color_face_map.items():
+        uvs = []
+        for face in faces:
+            for vert_idx, loop_idx in zip(face.vertices, face.loop_indices):
+                uvs.append(obj.data.uv_layers.active.data[loop_idx].uv)
+        uvs = translate_uvs(tile_infos[colors.index(color)], uvs)
+        print(color, len(uvs))
+        # Normalize
+        i_uvs = (Vector((v.x / width, v.y / height)) for v in uvs)
+        for face in faces:
+            for vert_idx, loop_idx in zip(face.vertices, face.loop_indices):
+                obj.data.uv_layers.active.data[loop_idx].uv = next(i_uvs)
+
+    l = [0.0 for i in range(len(image.pixels))]
+    l = paint_patch(tile_infos, l, width)
+
+    image.pixels = l
+
+    bpy.ops.object.mode_set(mode="EDIT")
