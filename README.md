@@ -16,5 +16,5 @@ download the lastest zip file. You find more details in the wiki.
 
 ## Usage
 
-You find the add-on in the Properties menu under "Texture". More infos in the
+You find the add-on in the Properties menu under "Material". More infos in the
 [wiki](https://github.com/LuFlo/texture_atlas_generator/wiki)

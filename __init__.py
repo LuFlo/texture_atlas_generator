@@ -3,12 +3,12 @@ bl_info = {
     "author": "Lukas Florea",
     "version": (0, 1, 0),
     "blender": (2, 80, 0),
-    "location": "Properties > Texture",
+    "location": "Properties > Material",
     "description": "Generates a Texture Atlas from multi-material object",
     "warning": "",
     "wiki_url": "https://github.com/LuFlo/texture_atlas_generator/wiki",
     "tracker_url": "https://github.com/LuFlo/texture_atlas_generator/issues/new",
-    "category": "Texture"
+    "category": "Material"
 }
 
 from . import util
@@ -24,7 +24,7 @@ class PerformGeneration(bpy.types.Operator):
     bl_label = "Generate Texture Atlas"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
-    bl_context = "texture"
+    bl_context = "material"
 
     @classmethod
     def poll(cls, context):
@@ -48,7 +48,7 @@ class PropsPanel(bpy.types.Panel):
     bl_idname = "OBJECT_PT_props_panel"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
-    bl_context = "texture"
+    bl_context = "material"
 
     @classmethod
     def poll(cls, context):
