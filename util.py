@@ -1,5 +1,3 @@
-from math import fabs
-
 from collections import namedtuple
 
 try:
@@ -15,7 +13,9 @@ def create_tile_infos(width, height, num_tiles, tile_size, colors):
     x_tiles = int(width / tile_size)
     y_tiles = int(height / tile_size)
     if x_tiles * y_tiles < num_tiles:
-        raise ValueError(f"Incorrect image dimensions for {num_tiles} tiles")
+        raise ValueError(
+                f"Insufficient image dimensions for {num_tiles} tiles. "
+                + f"The current image size only fits {x_tiles*y_tiles} tiles.")
     infos = []
     i_colors = iter(colors)
     for y_pos in range(y_tiles):
@@ -50,8 +50,6 @@ def paint_patch(
 
 
 def translate_uvs(tile_info: TileInfo, uvs=[], margin=5.0):
-    a_uv = uvs[0]
-
     min_x = min(uvs, key=lambda v: v.x).x
     min_y = min(uvs, key=lambda v: v.y).y
     max_x = max(uvs, key=lambda v: v.x).x
@@ -76,14 +74,14 @@ def translate_uvs(tile_info: TileInfo, uvs=[], margin=5.0):
     return out_uvs
 
 
-def generate_texture_atlas(image_size, tile_size):
+def generate_texture_atlas(image_size, tile_size, image_name):
     bpy.ops.object.mode_set(mode="OBJECT")
 
     obj = bpy.context.active_object
 
-    if "texture_atlas" not in bpy.data.images:
-        bpy.ops.image.new(name="texture_atlas", width=image_size, height=image_size)
-    image = bpy.data.images['texture_atlas']
+    if image_name not in bpy.data.images:
+        bpy.ops.image.new(name=image_name, width=image_size, height=image_size)
+    image = bpy.data.images[image_name]
     image.generated_width = image_size
     image.generated_height = image_size
     width = image.size[0]
@@ -100,7 +98,6 @@ def generate_texture_atlas(image_size, tile_size):
         if not color in color_face_map:
             color_face_map[color] = []
         color_face_map[color].append(face)
-
     tile_infos = create_tile_infos(width, height, len(colors), tile_size, colors)
 
     print(list(color_face_map.keys()))

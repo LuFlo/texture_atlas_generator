@@ -3,8 +3,6 @@
 import unittest
 import util
 
-from collections import namedtuple
-
 from .helper_classes import Vector
 
 class TestUtilMethods(unittest.TestCase):
