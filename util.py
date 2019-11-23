@@ -1,4 +1,5 @@
 from collections import namedtuple
+from typing import Tuple
 
 try:
     import bpy
@@ -6,37 +7,35 @@ try:
 except ImportError:
     from tests.helper_classes import Vector
 
-
 TileInfo = namedtuple('TileInfo', 'x1 y1 x2 y2 color')
 
-def create_tile_infos(width, height, num_tiles, tile_size, colors):
-    x_tiles = int(width / tile_size)
-    y_tiles = int(height / tile_size)
+
+def create_tile_infos(width, height, num_tiles, tile_size: Tuple[int, int], colors):
+    tile_width, tile_height = tile_size
+    x_tiles = int(width / tile_width)
+    y_tiles = int(height / tile_height)
     if x_tiles * y_tiles < num_tiles:
         raise ValueError(
-                f"Insufficient image dimensions for {num_tiles} tiles. "
-                + f"The current image size only fits {x_tiles*y_tiles} tiles.")
+            f"Insufficient image dimensions for {num_tiles} tiles. "
+            + f"The current image size only fits {x_tiles * y_tiles} tiles.")
     infos = []
     i_colors = iter(colors)
     for y_pos in range(y_tiles):
         for x_pos in range(x_tiles):
             try:
                 infos.append(TileInfo(
-                        x_pos * tile_size,
-                        y_pos * tile_size,
-                        x_pos * tile_size + tile_size - 1,
-                        y_pos * tile_size + tile_size - 1,
-                        next(i_colors)
-                    ))
+                    x_pos * tile_width,
+                    y_pos * tile_height,
+                    x_pos * tile_width + tile_width - 1,
+                    y_pos * tile_height + tile_height - 1,
+                    next(i_colors)
+                ))
             except StopIteration:
                 break
     return infos
 
 
-def paint_patch(
-        tile_infos: list = [],
-        pixels: list = [],
-        width: int = 0) -> list:
+def paint_patch(tile_infos: list = None, pixels: list = None, width: int = 0) -> list:
     if width == 0:
         raise ValueError("width can't be 0")
     out = [pixels[i] for i in range(len(pixels))]
@@ -49,7 +48,7 @@ def paint_patch(
     return out
 
 
-def translate_uvs(tile_info: TileInfo, uvs=[], margin=5.0):
+def translate_uvs(tile_info: TileInfo, uvs=None, margin=5.0):
     min_x = min(uvs, key=lambda v: v.x).x
     min_y = min(uvs, key=lambda v: v.y).y
     max_x = max(uvs, key=lambda v: v.x).x
@@ -74,16 +73,18 @@ def translate_uvs(tile_info: TileInfo, uvs=[], margin=5.0):
     return out_uvs
 
 
-def generate_texture_atlas(image_size, tile_size, image_name):
+def generate_texture_atlas(image_size: Tuple[int, int], tile_size: Tuple[int, int], image_name):
     bpy.ops.object.mode_set(mode="OBJECT")
 
     obj = bpy.context.active_object
-
-    if image_name not in bpy.data.images:
-        bpy.ops.image.new(name=image_name, width=image_size, height=image_size)
+    in_width, in_height = image_size
+    if image_name in bpy.data.images:
+        _image = bpy.data.images[image_name]
+        bpy.data.images.remove(_image)
+    bpy.ops.image.new(name=image_name, width=in_width, height=in_height)
     image = bpy.data.images[image_name]
-    image.generated_width = image_size
-    image.generated_height = image_size
+    image.generated_width = in_width
+    image.generated_height = in_height
     width = image.size[0]
     height = image.size[1]
 
@@ -93,9 +94,9 @@ def generate_texture_atlas(image_size, tile_size, image_name):
         mat_index = face.material_index
         mat = obj.material_slots[mat_index].material
         color = mat.node_tree.nodes["Principled BSDF"].inputs[0].default_value
-        if not color in colors:
+        if color not in colors:
             colors.append(color)
-        if not color in color_face_map:
+        if color not in color_face_map:
             color_face_map[color] = []
         color_face_map[color].append(face)
     tile_infos = create_tile_infos(width, height, len(colors), tile_size, colors)
@@ -115,9 +116,9 @@ def generate_texture_atlas(image_size, tile_size, image_name):
             for vert_idx, loop_idx in zip(face.vertices, face.loop_indices):
                 obj.data.uv_layers.active.data[loop_idx].uv = next(i_uvs)
 
-    l = [0.0 for i in range(len(image.pixels))]
-    l = paint_patch(tile_infos, l, width)
+    pixels = [0.0 for i in range(len(image.pixels))]
+    pixels = paint_patch(tile_infos, pixels, width)
 
-    image.pixels = l
+    image.pixels = pixels
 
     bpy.ops.object.mode_set(mode="EDIT")

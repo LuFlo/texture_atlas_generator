@@ -18,6 +18,7 @@ import bpy
 from bpy.props import IntProperty
 from bpy.props import StringProperty
 
+
 class PerformGeneration(bpy.types.Operator):
     """Tooltip"""
     bl_idname = "object.generate_texture_atlas"
@@ -34,8 +35,8 @@ class PerformGeneration(bpy.types.Operator):
     def execute(self, context):
         scene = context.scene
         try:
-            util.generate_texture_atlas(scene.tag_image_size,
-                                        scene.tag_tile_size,
+            util.generate_texture_atlas((scene.tag_image_width, scene.tag_image_height),
+                                        (scene.tag_tile_width, scene.tag_tile_height),
                                         scene.tag_image_name)
         except ValueError as e:
             self.report({'ERROR'}, str(e))
@@ -71,16 +72,30 @@ class PropsPanel(bpy.types.Panel):
         row = layout.row()
 
         col = row.column()
-        col.label(text='Image size')
+        col.label(text='Image width')
         col = row.column()
-        col.prop(context.scene, "tag_image_size")
+        col.prop(context.scene, "tag_image_width")
 
         row = layout.row()
 
         col = row.column()
-        col.label(text='Tile size')
+        col.label(text='Image height')
         col = row.column()
-        col.prop(context.scene, "tag_tile_size")
+        col.prop(context.scene, "tag_image_height")
+
+        row = layout.row()
+
+        col = row.column()
+        col.label(text='Tile width')
+        col = row.column()
+        col.prop(context.scene, "tag_tile_width")
+
+        row = layout.row()
+
+        col = row.column()
+        col.label(text='Tile height')
+        col = row.column()
+        col.prop(context.scene, "tag_tile_height")
 
         row = layout.row()
         row = layout.row()
@@ -90,19 +105,31 @@ class PropsPanel(bpy.types.Panel):
 def register():
     bpy.utils.register_class(PropsPanel)
     bpy.utils.register_class(PerformGeneration)
-    bpy.types.Scene.tag_image_size = IntProperty(
-            attr="tag_image_size",
+    bpy.types.Scene.tag_image_width = IntProperty(
+            attr="tag_image_width",
             name="",
             default=512, min=64, max=4096,
-            description="Width and height of texture atlas"
+            description="Width of texture atlas image"
         )
-    bpy.types.Scene.tag_tile_size = IntProperty(
-            attr="tag_tile_size",
+    bpy.types.Scene.tag_image_height = IntProperty(
+        attr="tag_image_height",
+        name="",
+        default=512, min=64, max=4096,
+        description="Height of texture atlas image"
+    )
+    bpy.types.Scene.tag_tile_width = IntProperty(
+            attr="tag_tile_width",
             name="",
             default=64, min=8, max=512,
-            description="Width and height of color tiles"
+            description="Width of color tiles"
         )
-    bpy.types.Scene.tag_image_name= StringProperty(
+    bpy.types.Scene.tag_tile_height = IntProperty(
+            attr="tag_tile_height",
+            name="",
+            default=64, min=8, max=512,
+            description="Height of color tiles"
+        )
+    bpy.types.Scene.tag_image_name = StringProperty(
             attr="tag_image_name",
             name="",
             default="texture_atlas",
