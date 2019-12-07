@@ -1,3 +1,29 @@
+# ##### BEGIN GPL LICENSE BLOCK #####
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# ##### END GPL LICENSE BLOCK #####
+
+from . import util
+
+import bpy
+
+from bpy.props import IntProperty
+from bpy.props import StringProperty
+from bpy.props import BoolProperty
+
+
 bl_info = {
     "name": "Texture Atlas Generator",
     "author": "Lukas Florea",
@@ -10,13 +36,6 @@ bl_info = {
     "tracker_url": "https://github.com/LuFlo/texture_atlas_generator/issues/new",
     "category": "Material"
 }
-
-from . import util
-
-import bpy
-
-from bpy.props import IntProperty
-from bpy.props import StringProperty
 
 
 class PerformGeneration(bpy.types.Operator):
@@ -37,7 +56,7 @@ class PerformGeneration(bpy.types.Operator):
         try:
             util.generate_texture_atlas((scene.tag_image_width, scene.tag_image_height),
                                         (scene.tag_tile_width, scene.tag_tile_height),
-                                        scene.tag_image_name)
+                                        scene.tag_image_name, scene.tag_use_srbg)
         except ValueError as e:
             self.report({'ERROR'}, str(e))
         return {'FINISHED'}
@@ -98,6 +117,13 @@ class PropsPanel(bpy.types.Panel):
         col.prop(context.scene, "tag_tile_height")
 
         row = layout.row()
+
+        col = row.column()
+        col.label(text='Use sRBG color space')
+        col = row.column()
+        col.prop(context.scene, "tag_use_srbg")
+
+        row = layout.row()
         row = layout.row()
         row.operator("object.generate_texture_atlas")
 
@@ -135,6 +161,12 @@ def register():
             default="texture_atlas",
             description="Name of the texture atlas image in the UV editor"
         )
+    bpy.types.Scene.tag_use_srbg = BoolProperty(
+        attr="tag_use_srbg",
+        name="",
+        default=True,
+        description="Converts the base colors to sRBG color space"
+    )
 
 
 def unregister():

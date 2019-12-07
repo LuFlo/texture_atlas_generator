@@ -1,5 +1,24 @@
+# ##### BEGIN GPL LICENSE BLOCK #####
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# ##### END GPL LICENSE BLOCK #####
+
 from collections import namedtuple
 from typing import Tuple
+
+from .gltf2_io_color_management import color_linear_to_srgb
 
 try:
     import bpy
@@ -35,7 +54,10 @@ def create_tile_infos(width, height, num_tiles, tile_size: Tuple[int, int], colo
     return infos
 
 
-def paint_patch(tile_infos: list = None, pixels: list = None, width: int = 0) -> list:
+def paint_patch(tile_infos: list = None,
+                pixels: list = None,
+                width: int = 0,
+                use_srbg: bool = True) -> list:
     if width == 0:
         raise ValueError("width can't be 0")
     out = [pixels[i] for i in range(len(pixels))]
@@ -44,7 +66,10 @@ def paint_patch(tile_infos: list = None, pixels: list = None, width: int = 0) ->
             for x in range(info.x1, info.x2 + 1):
                 offset = (x + y * width) * 4
                 for i, c in enumerate(info.color):
-                    out[offset + i] = c
+                    if use_srbg:
+                        out[offset + i] = color_linear_to_srgb(c)
+                    else:
+                        out[offset + i] = c
     return out
 
 
@@ -73,7 +98,10 @@ def translate_uvs(tile_info: TileInfo, uvs=None, margin=5.0):
     return out_uvs
 
 
-def generate_texture_atlas(image_size: Tuple[int, int], tile_size: Tuple[int, int], image_name):
+def generate_texture_atlas(image_size: Tuple[int, int],
+                           tile_size: Tuple[int, int],
+                           image_name: str,
+                           use_srbg: bool):
     bpy.ops.object.mode_set(mode="OBJECT")
 
     obj = bpy.context.active_object
@@ -117,7 +145,7 @@ def generate_texture_atlas(image_size: Tuple[int, int], tile_size: Tuple[int, in
                 obj.data.uv_layers.active.data[loop_idx].uv = next(i_uvs)
 
     pixels = [0.0 for i in range(len(image.pixels))]
-    pixels = paint_patch(tile_infos, pixels, width)
+    pixels = paint_patch(tile_infos, pixels, width, use_srbg)
 
     image.pixels = pixels
 
